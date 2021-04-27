@@ -30,4 +30,22 @@ class ProjectsTest extends TestCase
 
         $this->get('projects')->assertSee($attributes['title']);
     }
+
+    public function test_a_project_require_a_title()
+    {
+        // create
+        // will create the necessary attributes and save it to the DB.
+        // make
+        // will create the necessary attributes and that's it.
+        // raw
+        // will create the necessary attributes and return them as an array.
+        $attributes = factory('App\Project')->raw(['title' => '']);
+        $this->post('/projects', $attributes)->assertSessionHasErrors('title');
+    }
+
+    public function test_a_project_require_a_description()
+    {
+        $attributes = factory('App\Project')->raw(['description' => '']);
+        $this->post('/projects', $attributes)->assertSessionHasErrors('description');
+    }
 }

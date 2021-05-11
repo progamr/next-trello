@@ -6,7 +6,7 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class ProjectsTest extends TestCase
+class ManageProjectsTest extends TestCase
 {
     use WithFaker, RefreshDatabase;
 
@@ -22,6 +22,8 @@ class ProjectsTest extends TestCase
         // Create a user and log him in.
         $user = factory('App\User')->create();
         $this->actingAs($user);
+
+        $this->get('/projects/create')->assertStatus(200);
 
         $attributes = factory('App\Project')->raw();
 
@@ -67,23 +69,39 @@ class ProjectsTest extends TestCase
     public function test_a_user_can_view_a_project()
     {
 
-        $this->withoutExceptionHandling();
-
         $this->actingAs(factory('App\User')->create());
 
-        $project = factory('App\Project')->create();
+        // disable laravel graceful exception handling
+        // $this->withoutExceptionHandling();
+
+        $project = factory('App\Project')->create(['owner_id' => auth()->user()->id]);
 
         $this->get($project->path())
             ->assertSee($project->title)
             ->assertSee($project->description);
     }
 
-    public function test_only_authenticated_users_can_create_a_project()
+    public function test_an_authenticated_user_can_not_view_the_projects_of_others()
+    {
+
+        $this->actingAs(factory('App\User')->create());
+
+        $project = factory('App\Project')->create();
+
+        $this->get($project->path())->assertStatus(403);
+    }
+
+    public function test_guests_can_not_create_a_project()
     {
         // $this->withoutExceptionHandling();
-        $attributes = factory('App\Project')->raw();
+        $project = factory('App\Project')->create();
 
+        $this->get($project->path())->assertRedirect('login');
 
-        $this->post('/projects', $attributes)->assertRedirect('login');
+        $this->get('/projects/create')->assertRedirect('login');
+
+        $this->get('/projects')->assertRedirect('login');
+
+        $this->post('/projects', $project->toArray())->assertRedirect('login');
     }
 }

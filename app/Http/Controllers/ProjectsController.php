@@ -19,7 +19,8 @@ class ProjectsController extends Controller
     {
         $attributes = request()->validate(['title' => 'required', 'description' => 'required']);
 
-        Project::create($attributes);
+        // You have to be signed in in order to access this method
+        auth()->user()->projects()->create($attributes);
 
         return redirect('projects');
     }

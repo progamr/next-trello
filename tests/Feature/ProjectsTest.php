@@ -15,14 +15,19 @@ class ProjectsTest extends TestCase
      *
      * @return void
      */
-    public function test_a_user_can_create_a_project()
+    public function test_a_logged_in_user_can_create_a_project()
     {
         $this->withoutExceptionHandling();
 
-        $attributes = [
-            'title' => $this->faker->sentence,
-            'description' => $this->faker->paragraph,
-        ];
+        // Create a user and log him in.
+        $user = factory('App\User')->create();
+        $this->actingAs($user);
+
+        $attributes = factory('App\Project')->raw();
+
+        // change the user id from the id created by the factory
+        // to the logged in user id
+        $attributes['owner_id'] = $user->id;
 
         $this->post('/projects', $attributes)->assertRedirect('projects');
 
@@ -39,13 +44,23 @@ class ProjectsTest extends TestCase
         // will create the necessary attributes and that's it.
         // raw
         // will create the necessary attributes and return them as an array.
+
+        // Create a user and log him in.
+        $this->actingAs(factory('App\User')->create());
+
         $attributes = factory('App\Project')->raw(['title' => '']);
+
         $this->post('/projects', $attributes)->assertSessionHasErrors('title');
     }
 
     public function test_a_project_require_a_description()
     {
+
+        // Create a user and log him in.
+        $this->actingAs(factory('App\User')->create());
+
         $attributes = factory('App\Project')->raw(['description' => '']);
+
         $this->post('/projects', $attributes)->assertSessionHasErrors('description');
     }
 
@@ -54,10 +69,21 @@ class ProjectsTest extends TestCase
 
         $this->withoutExceptionHandling();
 
+        $this->actingAs(factory('App\User')->create());
+
         $project = factory('App\Project')->create();
 
         $this->get($project->path())
             ->assertSee($project->title)
             ->assertSee($project->description);
+    }
+
+    public function test_only_authenticated_users_can_create_a_project()
+    {
+        // $this->withoutExceptionHandling();
+        $attributes = factory('App\Project')->raw();
+
+
+        $this->post('/projects', $attributes)->assertRedirect('login');
     }
 }
